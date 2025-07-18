@@ -1,0 +1,139 @@
+---
+title: "Sales Data Analysis Project"
+author: "Shwetha"
+date: "2025-07-18"
+output: html_document
+---
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+## Introduction
+
+- Objective: Analyze the sales dataset to uncover key business insights.
+- Tasks performed:
+  - Cleaned and prepared the dataset.
+  - Extracted useful date features.
+  - Performed aggregation and summarization.
+  - Created visualizations for better understanding.
+  - Built a custom function for region-wise reports.
+  - Used loops and conditions for additional insights.
+
+---
+
+## Data Cleaning & Preparation
+
+```{r setup, message=FALSE, warning=FALSE}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+
+# Load the dataset
+data <- read.csv("sales_dataa.csv")
+
+# Handle missing values
+data$Units_Sold[is.na(data$Units_Sold)] <- mean(data$Units_Sold, na.rm = TRUE)
+data$Unit_Price[is.na(data$Unit_Price)] <- mean(data$Unit_Price, na.rm = TRUE)
+
+# Drop rows where Revenue is NA
+data <- data[!is.na(data$Revenue), ]
+
+# Convert date
+data$Date <- ymd(data$Date)
+
+# Add new columns
+data$Year <- year(data$Date)
+data$Month <- month(data$Date, label = TRUE, abbr = TRUE)
+data$Weekday <- wday(data$Date, label = TRUE, abbr = TRUE)
+```
+
+---
+
+## Analysis
+
+```{r analysis}
+# Month with highest revenue
+rev_by_month <- aggregate(Revenue ~ Month, data, sum)
+best_month <- rev_by_month$Month[which.max(rev_by_month$Revenue)]
+
+# Day with lowest average units sold
+avg_units_by_day <- aggregate(Units_Sold ~ Weekday, data, mean)
+worst_day <- avg_units_by_day$Weekday[which.min(avg_units_by_day$Units_Sold)]
+
+cat("Month with highest revenue:", best_month, "\n")
+cat("Day with lowest average units sold:", worst_day, "\n")
+```
+
+---
+
+##Loop & Condition Logic
+
+```{r loop-logic}
+avg_rev <- mean(data$Revenue)
+data$Performance <- ifelse(data$Revenue > avg_rev, "High", "Low")
+
+# Monthly revenue loop
+for (m in unique(data$Month)) {
+  total <- sum(data$Revenue[data$Month == m])
+  cat("Month:", m, "- Total Revenue:", total, "\n")
+}
+```
+
+---
+
+## Custom Region Report Function
+
+```{r custom-function}
+region_report <- function(region_name) {
+  sub <- data[data$Region == region_name, ]
+  total_rev <- sum(sub$Revenue, na.rm = TRUE)
+  top_product <- names(which.max(tapply(sub$Revenue, sub$Product, sum, na.rm = TRUE)))
+  high_rev_days <- sub$Date[sub$Revenue > mean(data$Revenue, na.rm = TRUE)]
+
+  cat(" Report for:", region_name, "\n")
+  cat("Total Revenue:", total_rev, "\n")
+  cat("Top-selling Product:", top_product, "\n")
+  cat("High Revenue Days:\n")
+  print(high_rev_days)
+}
+```
+
+---
+
+## Visualizations
+
+```{r plots}
+# Region vs Revenue
+ggplot(data, aes(x = Region, y = Revenue)) +
+  geom_bar(stat = "summary", fun = sum, fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "Total Revenue by Region")
+
+
+# Date vs Revenue Line Chart
+ggplot(data, aes(x = Date, y = Revenue)) +
+  geom_line(color = "darkgreen") +
+  theme_minimal() +
+  labs(title = "Revenue Over Time")
+
+# Stacked Bar: Product vs Units Sold by Performance
+ggplot(data, aes(x = Product, y = Units_Sold, fill = Performance)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Units Sold by Product and Performance")
+```
+
+---
+
+##Conclusion
+
+- Cleaned and enriched the sales dataset with date features.
+- Found that `r best_month` had the highest revenue.
+- Identified `r worst_day` as the weakest weekday for unit sales.
+- Created reusable functions for regional insights.
+- Visualizations showed strong patterns in product and regional performance.
+
+---
+
